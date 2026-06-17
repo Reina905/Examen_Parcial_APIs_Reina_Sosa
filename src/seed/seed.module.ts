@@ -6,7 +6,7 @@ import { Service } from '../services/service.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Service]), // Registra las entidades aquí
+    TypeOrmModule.forFeature([User, Service]), 
   ],
   providers: [SeedService],
 })

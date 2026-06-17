@@ -10,12 +10,11 @@ export class ServicesService {
   constructor(
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
-  ) {}
+  ) { }
 
   // Buscar todos los servicios trayendo solo el nombre del proveedor
   async findAllPublic() {
     return this.serviceRepository.find({
-      relations: ['provider'],
       select: {
         id: true,
         title: true,
@@ -23,8 +22,11 @@ export class ServicesService {
         description: true,
         price: true,
         provider: {
-          name: true, // Solo expone el nombre del usuario
+          name: true,
         },
+      },
+      relations: {
+        provider: true,
       },
     });
   }
@@ -35,7 +37,7 @@ export class ServicesService {
       ...createServiceDto,
       provider: { id: userPayload.id } as User, // Vincula usando el ID del token
     });
-    
+
     return this.serviceRepository.save(service);
   }
 }

@@ -1,59 +1,48 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Service } from '../services/service.entity';
 
 @Injectable()
-export class SeedService implements OnModuleInit {
-  constructor(
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+export class SeedService {
+  private readonly logger = new Logger('SeedService');
 
-    @InjectRepository(Service)
-    private readonly serviceRepository: Repository<Service>,
+  constructor(
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Service) private readonly serviceRepo: Repository<Service>,
   ) {}
 
-  async onModuleInit() {
-    await this.runSeed();
-  }
-
-  private async runSeed() {
+  async runSeed() {
     // 1. Verificar si ya existen usuarios para no duplicar datos
-    const userCount = await this.userRepository.count();
+    const userCount = await this.userRepo.count();
+    
     if (userCount > 0) {
+      this.logger.warn('⚠️ La base de datos ya contiene datos. Saltando el Seed.');
       return;
     }
 
-    console.log('Seed: Iniciando inserción de datos de prueba...');
+    this.logger.log('🌱 Iniciando inserción de datos de prueba en Postgres...');
 
-    // 2. Crear usuario Freelancer
-    const freelancer = this.userRepository.create({
+    // 2. Crear y guardar el usuario base
+    const user = this.userRepo.create({
+      name: 'Freelancer de Prueba',
       email: 'freelancer@test.com',
-      name: 'Alex Turner',
-      password: 'password123', 
+      password: 'password123', // Contraseña para simulación
     });
-    const savedUser = await this.userRepository.save(freelancer);
+    const savedUser = await this.userRepo.save(user);
 
-    // 3. Crear servicios asociados a ese usuario
-    const service1 = this.serviceRepository.create({
-      title: 'Diseño de logo profesional',
-      category: 'Diseño',
-      description: 'Incluye manual de marca, paleta de colores y formatos vectoriales.',
+    // 3. Crear servicios amarrados a ese usuario
+    const service1 = this.serviceRepo.create({
+      title: 'Desarrollo Web con NestJS',
+      category: 'Programación',
+      description: 'Creación de APIs robustas y escalables.',
       price: 150.00,
-      provider: savedUser, 
+      provider: savedUser, // Relación directa
     });
 
-    const service2 = this.serviceRepository.create({
-      title: 'Desarrollo de Landing Page en Next.js',
-      category: 'Desarrollo',
-      description: 'Sitio web estático de alta conversión, optimizado para SEO y responsive.',
-      price: 450.00,
-      provider: savedUser,
-    });
+    await this.serviceRepo.save(service1);
 
-    await this.serviceRepository.save([service1, service2]);
-
-    console.log('Seed: Datos cargados con éxito (1 Usuario, 2 Servicios).');
+    this.logger.localInstance.log('✅ Base de datos poblada con éxito (1 Usuario, 1 Servicio).');
   }
 }
